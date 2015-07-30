@@ -1,0 +1,85 @@
+<html>
+	<head>
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+		<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+	</head>
+	<body>
+		<div class = "container">
+			Enter ticker here: <input type = "text" id = "ticker" placeholder = "AAPL">
+			<p><br>
+			Start Date:        <input type = "text" id = "stdate" placeholder = "YYYY-MM-DD">
+			<p><br>
+			End Date:          <input type = "text" id = "endate" placeholder = "YYYY-MM-DD">
+			<p><br>
+
+			<select id = "period">
+				<option value = "daily">Daily</option>
+				<option value = "weekly">Weekly</option>
+				<option value = "monthly">Monthly</option>
+				<option value = "quarterly">Quarterly</option>
+				<option value = "annual">Annual</option>
+			</select>
+
+			<p>
+			<button id = "submit" class = "btn btn-primary">Submit</button>
+		</div>
+
+		<div id = "yeet">
+		</div>
+
+		<script>
+		$(document).ready(function(){
+			  var formatted_data = [];
+
+			  $("#submit").click(function(){
+				  var ticker = document.getElementById("ticker").value;
+				  var stDate = new Date(document.getElementById("stdate").value);
+				  var enDate = new Date(document.getElementById("endate").value);
+				  var collapse = document.getElementById("period");
+				  var selected = collapse.options[collapse.selectedIndex].text;
+
+				  var api = "https://www.quandl.com/api/v1/datasets/WIKI/" + ticker + ".json?trim_start="+stDate+"&trim_end="+enDate+"&sort_order=asc&column=4&collapse="+selected+"&auth_token=cEShBx3tpQsuzU7tgsyi";
+
+				  //console.log(api);
+				  $.ajax({
+				  	type: "GET",
+				  	url: api,
+				  	success: function(data){
+				  		iterateJson(data);
+				  	},
+				  	error: function(jqXHR, textStatus, errorThrown){
+				  		alert(jqXHR.status);
+				  	},
+				  	dataType: "json"
+				   });
+			 });
+
+			  function iterateJson(data){	  	
+			  	//console.log(data.data);
+			  	$.each(data.data, function(index, data){
+			  		var d = new Date(data[0]);
+			  		data[0] = d;
+			  		formatted_data.push(data);
+			  	});
+			  	console.log(formatted_data);
+			  	buildGraph(formatted_data);
+			  }
+
+			  function buildGraph(data){
+				  g = new Dygraph(document.getElementById("yeet"),
+			      data,
+			      {
+			        ylabel: 'Price in USD',
+			        xlabel: 'Years',
+			        title:  'AAPL Stock Prices',
+			        showRoller: false,
+			        rollPeriod: 14
+			      });
+			    g.resize(1160, 360);
+			}
+		})
+		</script>
+	</body>
+</html>
