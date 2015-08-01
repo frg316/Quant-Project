@@ -27,6 +27,7 @@
 
 			<p>
 			<button id = "submit" class = "btn btn-primary">Submit</button>
+			<button id = "reg" class = "btn btn-primary">Plot Regression Line</button>
 		</div>
 
 		<div id = "yeet">
@@ -39,6 +40,7 @@
 		<script>
 		$(document).ready(function(){
 			  var formatted_data = [];
+			  var g = null;
 
 			  $("#submit").click(function(){
 				  var ticker = document.getElementById("ticker").value;
@@ -48,7 +50,6 @@
 				  var selected = collapse.options[collapse.selectedIndex].text;
 
 				  var api = "https://www.quandl.com/api/v1/datasets/WIKI/" + ticker + ".json?trim_start="+stDate+"&trim_end="+enDate+"&sort_order=asc&column=4&collapse="+selected+"&auth_token=cEShBx3tpQsuzU7tgsyi";
-
 
 				  //console.log(api);
 				  $.ajax({
@@ -64,19 +65,28 @@
 				   });
 			 });
 
+			  $("#reg").click(function(){
+			  	mergeArray(formatted_data);
+			  })
+
 			  function iterateJson(data){	  	
-			  	//console.log(data.data);
 				  $.each(data.data, function(index, data){
 				  		var d = new Date(data[0]);
 				  		data[0] = d;
 				  		formatted_data.push(data);
 				  });
+
+				for (var i = 0; i < formatted_data.length; i++){
+			  		formatted_data[i][2] = null;
+			  	}
+
 				  console.log(formatted_data);
-				  //buildGraph(formatted_data);
-				  mergeArray(formatted_data);
+				  buildGraph(formatted_data);
+				  //mergeArray(formatted_data);
 			}
 
 			  function buildGraph(data){
+			  	if(!g){
 				  g = new Dygraph(document.getElementById("yeet"),
 			      data,
 			      {
@@ -88,10 +98,15 @@
 			      });
 			    g.resize(1160, 360);
 			}
+				else{
+					g.updateOptions({file: data});
+				}
+			}
 
 			  function mergeArray(data){
 			  	var yval = [];
 			  	var xval = [];
+
 			  	for(var i = 0; i < data.length; i++){
 			  		yval.push(data[i][1]);
 			  		var myDate=getTimestamp(data[i][0]);
@@ -99,10 +114,6 @@
 			  	}
 
 			  	var lr = linearRegression(yval, xval);
-			  	//console.log(lr);
-			  	for (var i = 0; i < data.length; i++){
-			  		data[i][2] = null;
-			  	}
 
 			  	for (var i = 0; i < data.length; i++){
 			  		var x = [];
