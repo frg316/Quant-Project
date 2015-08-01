@@ -1,9 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 	<head>
 		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-		<script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
-		<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+		<script type ="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+		<script type="text/javascript" src="http://dygraphs.com/dygraph-combined.js"></script>
+
+		<script type ="text/javascript" src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 	</head>
 	<body>
 		<h1>SCOOT</h1>
@@ -30,6 +32,10 @@
 		<div id = "yeet">
 		</div>
 
+		Value of r squared:
+		<div id = "r2">
+		</div>
+
 		<script>
 		$(document).ready(function(){
 			  var formatted_data = [];
@@ -42,6 +48,7 @@
 				  var selected = collapse.options[collapse.selectedIndex].text;
 
 				  var api = "https://www.quandl.com/api/v1/datasets/WIKI/" + ticker + ".json?trim_start="+stDate+"&trim_end="+enDate+"&sort_order=asc&column=4&collapse="+selected+"&auth_token=cEShBx3tpQsuzU7tgsyi";
+
 
 				  //console.log(api);
 				  $.ajax({
@@ -59,14 +66,15 @@
 
 			  function iterateJson(data){	  	
 			  	//console.log(data.data);
-			  	$.each(data.data, function(index, data){
-			  		var d = new Date(data[0]);
-			  		data[0] = d;
-			  		formatted_data.push(data);
-			  	});
-			  	console.log(formatted_data);
-			  	buildGraph(formatted_data);
-			  }
+				  $.each(data.data, function(index, data){
+				  		var d = new Date(data[0]);
+				  		data[0] = d;
+				  		formatted_data.push(data);
+				  });
+				  console.log(formatted_data);
+				  //buildGraph(formatted_data);
+				  mergeArray(formatted_data);
+			}
 
 			  function buildGraph(data){
 				  g = new Dygraph(document.getElementById("yeet"),
@@ -74,12 +82,50 @@
 			      {
 			        ylabel: 'Price in USD',
 			        xlabel: 'Years',
-			        title:  'AAPL Stock Prices',
+			        title:  document.getElementById("ticker").value + ' Stock Prices',
 			        showRoller: false,
 			        rollPeriod: 14
 			      });
 			    g.resize(1160, 360);
 			}
+
+			  function mergeArray(data){
+			  	var yval = [];
+			  	var xval = [];
+			  	for(var i = 0; i < data.length; i++){
+			  		yval.push(data[i][1]);
+			  		var myDate=getTimestamp(data[i][0]);
+			  		xval.push(myDate);
+			  	}
+
+			  	var lr = linearRegression(yval, xval);
+			  	//console.log(lr);
+			  	for (var i = 0; i < data.length; i++){
+			  		data[i][2] = null;
+			  	}
+
+			  	for (var i = 0; i < data.length; i++){
+			  		var x = [];
+				  	var initDate = new Date(xval[i]);
+				  	x.push(initDate, (lr.slope * xval[i]) + lr.intercept);
+
+			  		if(data[i][0].getTime() == x[0].getTime()){
+			  			data[i][2] = x[1];
+			  			hold = 1;
+			  		}
+			  	}
+
+			  	var theDiv = document.getElementById("r2");
+				var content = document.createTextNode(lr.r2);
+				theDiv.appendChild(content);
+
+			  	buildGraph(data);
+			  }
+
+			  function getTimestamp(myDate){
+			  	var someDate = new Date(myDate).getTime();
+				return someDate;
+			  }
 
 			  function linearRegression(y,x){
 				var lr = {};
