@@ -46,6 +46,13 @@
     <script>
     $(document).ready(function() {
         var formatted_data = [];
+        var shortMA = [];
+        var longMA = [];
+        var ticker;
+        var stDate;
+        var enDate;
+        var collapse;
+        var selected;
         var g = null;
         var stDate = null;
         var enDate = null;
@@ -96,12 +103,12 @@
             source: availableCompanies
           });
         $("#submit").click(function() {
-          var ticker = document.getElementById("ticker").value;
-          var stDate = new Date(document.getElementById("stdate").value);
+          ticker = document.getElementById("ticker").value;
+          stDate = new Date(document.getElementById("stdate").value);
           var endDateVar = document.getElementById("endate").value;
-          var enDate = new Date(document.getElementById("endate").value);
-          var collapse = document.getElementById("period");
-          var selected = collapse.options[collapse.selectedIndex].text;
+          enDate = new Date(document.getElementById("endate").value);
+          collapse = document.getElementById("period");
+          selected = collapse.options[collapse.selectedIndex].text;
           var api = "https://www.quandl.com/api/v1/datasets/WIKI/" + ticker + ".json?trim_start=" + stDate + "&trim_end=" + enDate + "&sort_order=asc&column=4&collapse=" + selected + "&auth_token=sbjcL7gXCPfsMtTKCa_w";
           $.ajax({
             type: "GET",
@@ -126,7 +133,6 @@
               }
             },
             error: function(jqXHR, textStatus, errorThrown) {
-
             },
             dataType: "json"
           });
@@ -144,15 +150,98 @@
           });
           for(var i = 0; i < formatted_data.length; i++) {
             formatted_data[i][2] = null;
+            formatted_data[i][3] = null;
+            formatted_data[i][4] = null;
           }
           console.log(formatted_data);
           buildGraph(formatted_data);
         }
 
+        $("#avg").click(function(){
+          getMovingAvgData();
+        })
+
         function movingAvg15(data) {
-          $.each(data.data, function(index, data) {
+          //console.log(data);
+          var arrCounts = [];
+          $.each(data.data, function(index, data){
+            var d = new Date(data[0]);
+            data[0] = d;
+            shortMA.push(data);
+          });
+          var count = 0;
+          for(var i = 0; i<15; i++){
+            var sum = 0;
+            var j =0;
+            if(count != 0){
+              j = count;
+            }
+            while(j<15){
+              sum = sum + shortMA[j][1];
+              j++;
+            }
+            arrCounts[i] = sum;
+            count++;
+          }
+          plotMovingAvg15(arrCounts, formatted_data);
+        }
+
+        function calculateMA(data){
+          console.log(data);
+          var arrCounts = [];
+          var count = 0;
+          for(var i = data.length -1; i >= 0; i--){
+            var j = 0;
+            var sum = 0;
+            if(count != 0){
+              j = count;
+            }
+            while(j<data.length){
+              sum = sum + data[j][1];
+              j++;
+            }
+            arrCounts[i] = sum;
+            count++;
+          }
+          console.log(arrCounts);
+        }
+
+        function plotMovingAvg15(sumArray, data){
+          var count = 0;
+          var arrMA = calculateMA(data);
+          for(var i = 0; i<data.length; i++){
+            if(count != 0){
+
+            }
+            else{
+              var ma = sumArray[0] / 15;
+              data[i][3] = ma;
+            }
+          }
+        }
+
+        function movingAvg50(data){
+          $.each(data.data, function(index, data){
             var d = new Date(data[0]);
           });
+        }
+
+        function getMovingAvgData(){
+          enDate.setDate(enDate.getDate()-30);
+          stDate.setDate(stDate.getDate()-20);
+          var api = "https://www.quandl.com/api/v1/datasets/WIKI/" + ticker + ".json?trim_start=" + stDate + "&trim_end=" + enDate + "&sort_order=asc&column=4&collapse=" + selected + "&auth_token=sbjcL7gXCPfsMtTKCa_w";
+          console.log(api);
+          $.ajax({
+            type: "GET",
+            url: api,
+            success: function(data) {
+              movingAvg15(data);
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+              alert(jqXHR.status + ": Stock info not found");
+            },
+            dataType: "json"
+           });
         }
 
         function getArticles(data) {
@@ -195,7 +284,7 @@
             {
               ylabel: 'Price in USD',
               xlabel: 'Years',
-              title: map[ticker.value] + ' Stock Prices',
+              title: map[ticker] + ' Stock Prices',
               showRoller: false,
               rollPeriod: 14
             });
