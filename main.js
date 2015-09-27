@@ -12,9 +12,11 @@
 	map["CVS"] = "CVS Corp."
 	map["CVX"] = "Chevron Corp."
 	map["DGX"] = "Quest Diagnostics";
+	map["DO"] = "Diamond Offshore Drilling";
 	map["DTEGY"] = "Deutsche Telekom";
 	map["XOM"] = "Exxon Mobil";
 	map["FB"] = "Facebook";
+	map["GALT"] = "Galectin Therapeutics Inc";
 	map["GE"] = "General Electric";
 	map["GS"] = "Goldman Sachs";
 	map["GOOG"] = "Google";

@@ -56,6 +56,7 @@
         var g = null;
         var stDate = null;
         var enDate = null;
+        var oldStart;
         var availableCompanies = [
           "AMZN",
           "AAPL",
@@ -70,10 +71,12 @@
           "CVS",
           "CVX",
           "DGX",
+          "DO",
           "DTEGY",
           "XOM",
           "FB",
           "GE",
+          "GALT",
           "GS",
           "GOOG",
           "HBC",
@@ -121,7 +124,7 @@
             },
             dataType: "json"
            });
-
+          console.log(map);
           var api2 = "http://api.nytimes.com/svc/search/v2/articlesearch.json?&q=" + map[ticker] + "&fq=pub_date:(" + endDateVar+ ")&api-key=acb9927935999a3fcdeb5899abcc9585:13:72477507";
           $.ajax({
             type: "GET",
@@ -153,7 +156,7 @@
             formatted_data[i][3] = null;
             formatted_data[i][4] = null;
           }
-          console.log(formatted_data);
+          //console.log(formatted_data);
           buildGraph(formatted_data);
         }
 
@@ -169,73 +172,87 @@
             data[0] = d;
             shortMA.push(data);
           });
-          var count = 0;
-          for(var i = 0; i<15; i++){
-            var sum = 0;
-            var j =0;
-            if(count != 0){
-              j = count;
-            }
-            while(j<15){
-              sum = sum + shortMA[j][1];
-              j++;
-            }
-            arrCounts[i] = sum;
-            count++;
+          //console.log(shortMA);
+          for(var i = 0; i < shortMA.length; i++){
+              formatted_data.unshift(shortMA[i]);
           }
-          plotMovingAvg15(arrCounts, formatted_data);
+            //console.log(formatted_data);
+            var sma15 = simple_moving_averager(15);
+            for(var i = 0; i < formatted_data.length; i++){
+              var n = formatted_data[i][1];
+              formatted_data[i][3] = sma15(n);
+            }
+            formatted_data = formatted_data.slice(15, formatted_data.length);
+            getMovingAvgData50();
+            //buildGraph(formatted_data);
         }
-
-        function calculateMA(data){
-          console.log(data);
-          var arrCounts = [];
-          var count = 0;
-          for(var i = data.length -1; i >= 0; i--){
-            var j = 0;
-            var sum = 0;
-            if(count != 0){
-              j = count;
+        function simple_moving_averager(period) {
+            var nums = [];
+            return function(num) {
+                nums.push(num);
+                if (nums.length > period)
+                    nums.splice(0,1);  // remove the first element of the array
+                var sum = 0;
+                for (var i in nums)
+                    sum += nums[i];
+                var n = period;
+                if (nums.length < period)
+                    n = nums.length;
+                return(sum/n);
             }
-            while(j<data.length){
-              sum = sum + data[j][1];
-              j++;
-            }
-            arrCounts[i] = sum;
-            count++;
-          }
-          console.log(arrCounts);
-        }
-
-        function plotMovingAvg15(sumArray, data){
-          var count = 0;
-          var arrMA = calculateMA(data);
-          for(var i = 0; i<data.length; i++){
-            if(count != 0){
-
-            }
-            else{
-              var ma = sumArray[0] / 15;
-              data[i][3] = ma;
-            }
-          }
         }
 
         function movingAvg50(data){
+          var arrCounts = [];
           $.each(data.data, function(index, data){
             var d = new Date(data[0]);
+            data[0] = d;
+            shortMA.push(data);
           });
+          //console.log(shortMA);
+          for(var i = 0; i < shortMA.length; i++){
+              formatted_data.unshift(shortMA[i]);
+          }
+            //console.log(formatted_data);
+            var sma15 = simple_moving_averager(50);
+            for(var i = 0; i < formatted_data.length; i++){
+              var n = formatted_data[i][1];
+              formatted_data[i][4] = sma15(n);
+            }
+            formatted_data = formatted_data.slice(50, formatted_data.length);
+            buildGraph(formatted_data);
         }
 
         function getMovingAvgData(){
-          enDate.setDate(enDate.getDate()-30);
+          //enDate.setDate(enDate.getDate()-30);
+          oldStart = new Date(stDate);
           stDate.setDate(stDate.getDate()-20);
-          var api = "https://www.quandl.com/api/v1/datasets/WIKI/" + ticker + ".json?trim_start=" + stDate + "&trim_end=" + enDate + "&sort_order=asc&column=4&collapse=" + selected + "&auth_token=sbjcL7gXCPfsMtTKCa_w";
+          var api = "https://www.quandl.com/api/v1/datasets/WIKI/" + ticker + ".json?trim_start=" + stDate + "&trim_end=" + oldStart + "&sort_order=asc&column=4&collapse=" + selected + "&auth_token=sbjcL7gXCPfsMtTKCa_w";
           console.log(api);
           $.ajax({
             type: "GET",
             url: api,
             success: function(data) {
               movingAvg15(data);
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+              alert(jqXHR.status + ": Stock info not found");
+            },
+            dataType: "json"
+           });
+        }
+
+        function getMovingAvgData50(){
+          //enDate.setDate(enDate.getDate()-30);
+          oldStart = new Date(stDate);
+          stDate.setDate(stDate.getDate()-60);
+          var api = "https://www.quandl.com/api/v1/datasets/WIKI/" + ticker + ".json?trim_start=" + stDate + "&trim_end=" + oldStart + "&sort_order=asc&column=4&collapse=" + selected + "&auth_token=sbjcL7gXCPfsMtTKCa_w";
+          console.log(api);
+          $.ajax({
+            type: "GET",
+            url: api,
+            success: function(data) {
+              movingAvg50(data);
             },
             error: function(jqXHR, textStatus, errorThrown) {
               alert(jqXHR.status + ": Stock info not found");
